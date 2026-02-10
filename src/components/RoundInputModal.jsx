@@ -185,7 +185,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave, initialData }) => {
                             <div className="p-3 bg-zinc-800/50 rounded-xl space-y-3 border border-zinc-700">
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-xs text-zinc-500 mb-1 block">Người Chặt (Thắng/To)</label>
+                                        <label className="text-xs text-zinc-500 mb-1 block">Người Chặt</label>
                                         <select 
                                             value={pTo} 
                                             onChange={(e) => setPTo(e.target.value)}
@@ -196,7 +196,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave, initialData }) => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-zinc-500 mb-1 block">Người Bị Chặt (Thua/From)</label>
+                                        <label className="text-xs text-zinc-500 mb-1 block">Người Bị Chặt</label>
                                         <select 
                                             value={pFrom} 
                                             onChange={(e) => setPFrom(e.target.value)}
