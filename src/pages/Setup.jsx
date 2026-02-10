@@ -75,11 +75,11 @@ const Setup = () => {
     return (
         <div className="flex-1 flex flex-col p-4 space-y-6 max-w-lg mx-auto w-full">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent text-center">
-                Game Setup
+                Thiết Lập Game Mới
             </h1>
 
             <div className="space-y-4">
-                <label className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Game Mode</label>
+                <label className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Chế Độ Chơi</label>
                 <div className="grid grid-cols-2 gap-4">
                     <button
                         onClick={() => setMode('CHAM_DIEM')}
@@ -92,7 +92,7 @@ const Setup = () => {
                     >
                         <Target className="w-8 h-8 mb-2" />
                         <span className="font-semibold">Chạm Điểm</span>
-                        <span className="text-xs opacity-70 mt-1">Race to Target</span>
+                        <span className="text-xs opacity-70 mt-1">Đua tới điểm đích</span>
                     </button>
                     <button
                         onClick={() => setMode('TINH_DIEM')}
@@ -105,14 +105,14 @@ const Setup = () => {
                     >
                         <Trophy className="w-8 h-8 mb-2" />
                         <span className="font-semibold">Tính Điểm</span>
-                        <span className="text-xs opacity-70 mt-1">Score per Round</span>
+                        <span className="text-xs opacity-70 mt-1">Tính điểm từng ván</span>
                     </button>
                 </div>
             </div>
 
             {mode === 'CHAM_DIEM' && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
-                    <label className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Target Score</label>
+                    <label className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Điểm Đích</label>
                     <div className="flex items-center gap-4">
                         <input
                             type="number"
@@ -127,7 +127,7 @@ const Setup = () => {
             )}
 
             <div className="space-y-4">
-                <label className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Players</label>
+                <label className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Người Chơi</label>
                 <div className="space-y-3">
                     {players.map((player, i) => (
                         <div key={i} className="relative">
@@ -138,7 +138,7 @@ const Setup = () => {
                                 type="text"
                                 value={player}
                                 onChange={(e) => handlePlayerChange(i, e.target.value)}
-                                placeholder={`Player ${i + 1} Name`}
+                                placeholder={`Tên người chơi ${i + 1}`}
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-12 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             />
                         </div>
@@ -159,7 +159,7 @@ const Setup = () => {
                     disabled={loading}
                     className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all active:scale-95 disabled:opacity-50"
                 >
-                    {loading ? 'Creating...' : 'Start Game'}
+                    {loading ? 'Đang tạo...' : 'Bắt Đầu'}
                     {!loading && <ArrowRight className="w-5 h-5" />}
                 </button>
                 {error && <p className="text-red-500 text-center mt-2">{error}</p>}

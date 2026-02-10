@@ -57,12 +57,12 @@ const Home = () => {
         className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all active:scale-95"
       >
         <Play className="w-6 h-6 fill-current" />
-        New Game
+        Tạo Game Mới
       </button>
 
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-zinc-300 flex items-center gap-2">
-            <Calendar className="w-5 h-5" /> Recent Games
+            <Calendar className="w-5 h-5" /> Lịch Sử Đấu
         </h2>
 
         {loadingHistory ? (
@@ -71,7 +71,7 @@ const Home = () => {
             </div>
         ) : recentGames.length === 0 ? (
             <div className="text-center py-8 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
-                No games found. Start a new one!
+                Chưa có game nào. Tạo mới ngay!
             </div>
         ) : (
             <div className="space-y-3">
@@ -103,7 +103,7 @@ const Home = () => {
                                         </span>
                                         {isFinished && (
                                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-900/30 text-yellow-500 border border-yellow-900/50">
-                                                Finished
+                                                Kết Thúc
                                             </span>
                                         )}
                                     </div>
@@ -116,13 +116,13 @@ const Home = () => {
 
                             <div className="space-y-2">
                                 <div className="text-sm font-medium text-zinc-300">
-                                    Players: <span className="text-zinc-500">{game.players?.join(', ')}</span>
+                                    Người chơi: <span className="text-zinc-500">{game.players?.join(', ')}</span>
                                 </div>
                                 {leader && (
                                     <div className="flex items-center gap-2 text-sm">
                                         <Trophy className="w-4 h-4 text-yellow-500" />
-                                        <span className="text-yellow-500 font-bold">{leader}</span>
-                                        <span className="text-zinc-500">({scores[leader]} pts)</span>
+                                        <span className="text-yellow-500 font-bold">{isFinished ? 'Thắng' : 'Dẫn đầu'}: {leader}</span>
+                                        <span className="text-zinc-500">({scores[leader]} điểm)</span>
                                     </div>
                                 )}
                             </div>

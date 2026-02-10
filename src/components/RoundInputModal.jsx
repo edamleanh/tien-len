@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Trophy, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 
-const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
+const RoundInputModal = ({ isOpen, onClose, players, onSave, initialData }) => {
     // ranks: ordered list of player names (1st to 4th)
     const [rankedPlayers, setRankedPlayers] = useState([]);
     const [penalties, setPenalties] = useState([]);
@@ -16,15 +16,29 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
 
     useEffect(() => {
         if (isOpen) {
-            setRankedPlayers([]);
-            setPenalties([]);
+            if (initialData) {
+                // Pre-fill for edit mode
+                const ranksMap = initialData.ranks || {};
+                // Convert map { "P1": 1, "P2": 2 } to array ["P1", "P2"]
+                const sortedPlayers = Object.entries(ranksMap)
+                    .sort(([, rankA], [, rankB]) => rankA - rankB)
+                    .map(([player]) => player);
+
+                // Ensure all players are accounted for (in case of data issues), though usually fine
+                setRankedPlayers(sortedPlayers);
+                setPenalties(initialData.penalties || []);
+            } else {
+                // Reset for new round
+                setRankedPlayers([]);
+                setPenalties([]);
+            }
             setShowPenaltyForm(false);
             setPFrom(players[0] || '');
             setPTo(players[1] || '');
             setPAmount(1);
             setPReason('Chặt Heo');
         }
-    }, [isOpen, players]);
+    }, [isOpen, players, initialData]);
 
     if (!isOpen) return null;
 
@@ -69,7 +83,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl shadow-xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom-10 duration-300">
                 <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-                    <h2 className="text-lg font-bold text-white">New Round Result</h2>
+                    <h2 className="text-lg font-bold text-white">Kết Quả Ván Đấu</h2>
                     <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white bg-zinc-800 rounded-full">
                         <X className="w-5 h-5" />
                     </button>
@@ -79,7 +93,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                     {/* Ranking Section */}
                     <div className="space-y-3">
                         <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                            <Trophy className="w-4 h-4" /> Rankings
+                            <Trophy className="w-4 h-4" /> Xếp Hạng
                         </h3>
                         
                         <div className="space-y-2">
@@ -107,7 +121,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                                             )}>
                                                 {index + 1}
                                             </span>
-                                            <span className="font-medium">{player || "Tap player to select"}</span>
+                                            <span className="font-medium">{player || "Chọn người chơi"}</span>
                                         </div>
                                         {player && <X className="w-4 h-4 text-zinc-500" />}
                                     </div>
@@ -117,7 +131,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                         
                         {unrankedPlayers.length > 0 && (
                             <div className="pt-2">
-                                <p className="text-xs text-zinc-500 mb-2">Tap to select next rank:</p>
+                                <p className="text-xs text-zinc-500 mb-2">Chọn thứ hạng tiếp theo:</p>
                                 <div className="flex flex-wrap gap-2">
                                     {unrankedPlayers.map(player => (
                                         <button
@@ -137,14 +151,14 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                     <div className="space-y-3 pt-4 border-t border-zinc-800">
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                                <AlertTriangle className="w-4 h-4" /> Penalties
+                                <AlertTriangle className="w-4 h-4" /> Phạt / Thưởng
                             </h3>
                             {!showPenaltyForm && (
                                 <button 
                                     onClick={() => setShowPenaltyForm(true)}
                                     className="text-xs flex items-center gap-1 text-blue-400 hover:text-blue-300"
                                 >
-                                    <Plus className="w-3 h-3" /> Add
+                                    <Plus className="w-3 h-3" /> Thêm
                                 </button>
                             )}
                         </div>
@@ -154,10 +168,10 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                                 {penalties.map((p, i) => (
                                     <div key={i} className="flex items-center justify-between p-3 bg-red-900/10 border border-red-900/30 rounded-lg text-sm">
                                         <div>
-                                            <span className="font-bold text-red-400">{p.from}</span>
-                                            <span className="text-zinc-500 mx-1">➜</span>
                                             <span className="font-bold text-green-400">{p.to}</span>
-                                            <div className="text-xs text-zinc-500 mt-0.5">{p.reason} ({p.amount} pts)</div>
+                                            <span className="text-zinc-500 mx-1">chặt</span>
+                                            <span className="font-bold text-red-400">{p.from}</span>
+                                            <div className="text-xs text-zinc-500 mt-0.5">{p.reason} ({p.amount} điểm)</div>
                                         </div>
                                         <button onClick={() => handleRemovePenalty(i)} className="p-1 text-zinc-500 hover:text-red-400">
                                             <X className="w-4 h-4" />
@@ -171,44 +185,44 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                             <div className="p-3 bg-zinc-800/50 rounded-xl space-y-3 border border-zinc-700">
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-xs text-zinc-500 mb-1 block">Lost (From)</label>
-                                        <select 
-                                            value={pFrom} 
-                                            onChange={(e) => setPFrom(e.target.value)}
-                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-sm text-white"
-                                        >
-                                            <option value="" disabled>Select</option>
-                                            {players.map(p => <option key={p} value={p}>{p}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-zinc-500 mb-1 block">Gained (To)</label>
+                                        <label className="text-xs text-zinc-500 mb-1 block">Người Chặt (Thắng/To)</label>
                                         <select 
                                             value={pTo} 
                                             onChange={(e) => setPTo(e.target.value)}
                                             className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-sm text-white"
                                         >
-                                            <option value="" disabled>Select</option>
+                                            <option value="" disabled>Chọn</option>
+                                            {players.map(p => <option key={p} value={p}>{p}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-zinc-500 mb-1 block">Người Bị Chặt (Thua/From)</label>
+                                        <select 
+                                            value={pFrom} 
+                                            onChange={(e) => setPFrom(e.target.value)}
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-sm text-white"
+                                        >
+                                            <option value="" disabled>Chọn</option>
                                             {players.map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-xs text-zinc-500 mb-1 block">Points</label>
+                                        <label className="text-xs text-zinc-500 mb-1 block">Điểm</label>
                                         <select 
                                             value={pAmount} 
                                             onChange={(e) => setPAmount(e.target.value)}
                                             className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-sm text-white"
                                         >
-                                            <option value="1">1 point</option>
-                                            <option value="2">2 points</option>
-                                            <option value="3">3 points</option>
-                                            <option value="4">4 points</option>
+                                            <option value="1">1 điểm</option>
+                                            <option value="2">2 điểm</option>
+                                            <option value="3">3 điểm</option>
+                                            <option value="4">4 điểm</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-zinc-500 mb-1 block">Reason</label>
+                                        <label className="text-xs text-zinc-500 mb-1 block">Lý do</label>
                                         <select 
                                             value={pReason} 
                                             onChange={(e) => setPReason(e.target.value)}
@@ -219,7 +233,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                                             <option value="Chặt Tứ Quý">Chặt Tứ Quý</option>
                                             <option value="Thối Heo">Thối Heo</option>
                                             <option value="Cóng">Cóng</option>
-                                            <option value="Other">Other</option>
+                                            <option value="Other">Khác</option>
                                         </select>
                                     </div>
                                 </div>
@@ -228,13 +242,13 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                                         onClick={() => setShowPenaltyForm(false)}
                                         className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white"
                                     >
-                                        Cancel
+                                        Hủy
                                     </button>
                                     <button 
                                         onClick={handleAddPenalty}
                                         className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-500"
                                     >
-                                        Add Penalty
+                                        Thêm Phạt
                                     </button>
                                 </div>
                             </div>
@@ -247,7 +261,7 @@ const RoundInputModal = ({ isOpen, onClose, players, onSave }) => {
                         onClick={handleSave}
                         className="w-full bg-white text-black py-3 rounded-xl font-bold hover:bg-zinc-200 transition-colors"
                     >
-                        Save Round Results
+                        Lưu Kết Quả
                     </button>
                 </div>
             </div>
