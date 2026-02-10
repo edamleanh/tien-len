@@ -1,142 +1,189 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, runTransaction, arrayUnion } from 'firebase/firestore';
-import { calculateRoundScores } from '../lib/utils';
+import { doc, onSnapshot, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 const GameContext = createContext();
 
-export function GameProvider({ children }) {
-  const [activeSession, setActiveSession] = useState(null);
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
+export const useGame = () => useContext(GameContext);
 
-  // Subscribe to sessions
+export const GameProvider = ({ children }) => {
+  const [gameId, setGameId] = useState(null);
+  const [gameState, setGameState] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Load game from local storage on mount
   useEffect(() => {
-    const q = query(collection(db, 'sessions'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const sessionsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setSessions(sessionsData);
-      
-      // Auto-select active session if one exists and we don't have one selected or it matches
-      const active = sessionsData.find(s => s.status === 'ACTIVE');
-      if (active) {
-        setActiveSession(active);
-      }
+    const savedGameId = localStorage.getItem('tien-len-game-id');
+    if (savedGameId) {
+      setGameId(savedGameId);
+    }
+  }, []);
+
+  // Subscribe to game updates when gameId changes
+  useEffect(() => {
+    if (!gameId) {
+      setGameState(null);
+      return;
+    }
+
+    setLoading(true);
+    const unsubscribe = onSnapshot(doc(db, "games", gameId), (doc) => {
       setLoading(false);
+      if (doc.exists()) {
+        setGameState(doc.data());
+      } else {
+        setError("Game not found");
+        setGameId(null);
+        localStorage.removeItem('tien-len-game-id');
+      }
+    }, (err) => {
+      setLoading(false);
+      setError(err.message);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [gameId]); // Add gameId as dependency
 
-  const createSession = async (players, mode) => {
-    // players: array of strings
-    // mode: 'TARGET' | 'ZERO_SUM'
-    
-    const initialScores = {};
-    players.forEach(p => initialScores[p] = 0);
+  const createGame = async (mode, targetScore, playerNames) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // transform player names to objects or just initialize scores map
+      // Initial score is 0.
+      const initialScores = {};
+      playerNames.forEach(name => initialScores[name] = 0);
 
-    const newSession = {
-      createdAt: serverTimestamp(),
-      status: 'ACTIVE',
-      mode,
-      players,
-      totalScores: initialScores,
-      history: [] // Array of rounds
-    };
+      const newGameId = Math.random().toString(36).substring(2, 6).toUpperCase();
+      
+      const newGame = {
+        id: newGameId,
+        createdAt: new Date().toISOString(),
+        players: playerNames,
+        mode,
+        targetScore: mode === 'CHAM_DIEM' ? parseInt(targetScore) : null,
+        rounds: [],
+        totalScores: initialScores,
+        status: 'ACTIVE' // ACTIVE, FINISHED
+      };
 
-    const docRef = await addDoc(collection(db, 'sessions'), newSession);
-    // Logic to set active is handled by subscription, but we can set it optimistically/immediately if needed
-    return docRef.id;
+      await setDoc(doc(db, "games", newGameId), newGame);
+      setGameId(newGameId);
+      localStorage.setItem('tien-len-game-id', newGameId);
+    } catch (err) {
+      setError(err.message);
+      console.error("Error creating game:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const endSession = async (sessionId) => {
-     await updateDoc(doc(db, 'sessions', sessionId), {
-       status: 'COMPLETED',
-       endedAt: serverTimestamp()
-     });
-     setActiveSession(null);
+  const joinGame = (id) => {
+    setGameId(id.toUpperCase());
+    localStorage.setItem('tien-len-game-id', id.toUpperCase());
   };
 
-  const addRound = async (sessionId, rankings, mode) => {
-    // rankings: [1st, 2nd, 3rd, 4th]
-    const roundScores = calculateRoundScores(mode, rankings);
-    
-    // Create round object
-    const roundData = {
-      type: 'ROUND',
-      rankings,
-      scores: roundScores,
-      createdAt: new Date().toISOString() // Use string for array storage
-    };
-
-    const sessionRef = doc(db, 'sessions', sessionId);
-
-    await runTransaction(db, async (transaction) => {
-      const sessionDoc = await transaction.get(sessionRef);
-      if (!sessionDoc.exists()) throw "Session not found";
-
-      const currentTotal = sessionDoc.data().totalScores || {};
-      const newTotal = { ...currentTotal };
-
-      Object.entries(roundScores).forEach(([player, score]) => {
-        newTotal[player] = (newTotal[player] || 0) + score;
-      });
-
-      transaction.update(sessionRef, {
-        totalScores: newTotal,
-        history: arrayUnion(roundData)
-      });
-    });
+  const leaveGame = () => {
+    setGameId(null);
+    setGameState(null);
+    localStorage.removeItem('tien-len-game-id');
   };
 
-  const addPenalty = async (sessionId, fromPlayer, toPlayer, amount, reason) => {
-    // amount is positive number (penalty value)
-    // deduct from 'fromPlayer', add to 'toPlayer'
-    
-    const penaltyScores = {
-      [fromPlayer]: -amount,
-      [toPlayer]: amount
-    };
+  const addRound = async (ranks, penalties) => {
+    if (!gameId || !gameState) return;
 
-    const penaltyData = {
-      type: 'PENALTY',
-      from: fromPlayer,
-      to: toPlayer,
-      amount,
-      reason,
-      scores: penaltyScores,
-      createdAt: new Date().toISOString()
-    };
+    try {
+        const currentScores = { ...gameState.totalScores };
+        const roundScores = {};
 
-    const sessionRef = doc(db, 'sessions', sessionId);
+        // Calculate scores based on ranks
+        // ranks is { "PlayerName": 1, ... }
+        // mode: CHAM_DIEM (3, 2, 1, 0)
+        // mode: TINH_DIEM (2, 1, -1, -2)
 
-    await runTransaction(db, async (transaction) => {
-      const sessionDoc = await transaction.get(sessionRef);
-      if (!sessionDoc.exists()) throw "Session not found";
+        const players = gameState.players;
+        
+        players.forEach(player => {
+            const rank = ranks[player];
+            let scoreChange = 0;
 
-      const currentTotal = sessionDoc.data().totalScores || {};
-      const newTotal = { ...currentTotal };
+            if (gameState.mode === 'CHAM_DIEM') {
+                if (rank === 1) scoreChange = 3;
+                else if (rank === 2) scoreChange = 2;
+                else if (rank === 3) scoreChange = 1;
+                else scoreChange = 0;
+            } else { // TINH_DIEM
+                if (rank === 1) scoreChange = 2;
+                else if (rank === 2) scoreChange = 1;
+                else if (rank === 3) scoreChange = -1;
+                else scoreChange = -2;
+            }
+            roundScores[player] = scoreChange;
+        });
 
-      newTotal[fromPlayer] = (newTotal[fromPlayer] || 0) - amount;
-      newTotal[toPlayer] = (newTotal[toPlayer] || 0) + amount;
+        // Apply penalties
+        // penalties: [{ from: "A", to: "B", amount: 2, reason: "..." }]
+        // In TINH_DIEM, usually penalties are direct transfer.
+        // In CHAM_DIEM, penalties might just add to score? 
+        // User rule: "nhớ thêm các luật bổ sung như bị chặt heo vào."
+        // Usually Chặt Heo is separate calculation.
+        // Let's assume penalties are transfers: A loses points, B gains points.
 
-      transaction.update(sessionRef, {
-        totalScores: newTotal,
-        history: arrayUnion(penaltyData)
-      });
-    });
+        if (penalties && penalties.length > 0) {
+             penalties.forEach(p => {
+                 roundScores[p.from] = (roundScores[p.from] || 0) - p.amount;
+                 roundScores[p.to] = (roundScores[p.to] || 0) + p.amount;
+             });
+        }
+        
+        // Update total scores
+        players.forEach(player => {
+            currentScores[player] = (currentScores[player] || 0) + (roundScores[player] || 0);
+        });
+
+        // Check for win condition in CHAM_DIEM
+        let status = 'ACTIVE';
+        if (gameState.mode === 'CHAM_DIEM') {
+             const winner = players.find(p => currentScores[p] >= gameState.targetScore);
+             if (winner) {
+                 status = 'FINISHED';
+             }
+        }
+
+        const newRound = {
+            roundNumber: gameState.rounds.length + 1,
+            ranks,
+            penalties: penalties || [],
+            scores: roundScores,
+            timestamp: new Date().toISOString()
+        };
+
+        await updateDoc(doc(db, "games", gameId), {
+            rounds: arrayUnion(newRound),
+            totalScores: currentScores,
+            status
+        });
+
+    } catch (err) {
+        setError(err.message);
+        console.error("Error adding round:", err);
+    }
+  };
+
+  const value = {
+    gameId,
+    gameState,
+    loading,
+    error,
+    createGame,
+    joinGame,
+    leaveGame,
+    addRound
   };
 
   return (
-    <GameContext.Provider value={{ activeSession, sessions, createSession, endSession, addRound, addPenalty, loading }}>
+    <GameContext.Provider value={value}>
       {children}
     </GameContext.Provider>
   );
-}
-
-export function useGame() {
-  return useContext(GameContext);
-}
+};
