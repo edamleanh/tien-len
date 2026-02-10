@@ -1,19 +1,21 @@
 import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 
-// TODO: Replace the following with your app's Firebase project configuration
-// See: https://firebase.google.com/docs/web/setup#config-object
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD-vza4_VR-IVcxcPkqV1FcS1ocuVJ5_zs",
+  authDomain: "tine-len-38edb.firebaseapp.com",
+  projectId: "tine-len-38edb",
+  storageBucket: "tine-len-38edb.firebasestorage.app",
+  messagingSenderId: "874903621742",
+  appId: "1:874903621742:web:6e3211c4917485bdc4167f",
+  measurementId: "G-K5FV1Y7GXX"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
-export { db };
+export { app, analytics, db };
