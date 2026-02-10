@@ -114,20 +114,14 @@ const Setup = () => {
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
                     <label className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Target Score</label>
                     <div className="flex items-center gap-4">
-                        {[15, 20, 30, 50].map(score => (
-                            <button
-                                key={score}
-                                onClick={() => setTargetScore(score)}
-                                className={clsx(
-                                    "px-4 py-2 rounded-lg font-medium transition-all",
-                                    targetScore === score
-                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
-                                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                                )}
-                            >
-                                {score}
-                            </button>
-                        ))}
+                        <input
+                            type="number"
+                            pattern="[0-9]*"
+                            inputMode="numeric"
+                            value={targetScore}
+                            onChange={(e) => setTargetScore(parseInt(e.target.value) || 0)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
                     </div>
                 </div>
             )}

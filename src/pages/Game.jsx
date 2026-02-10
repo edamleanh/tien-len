@@ -66,10 +66,7 @@ const Game = () => {
             <div className="flex items-center justify-between bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-sm sticky top-0 z-10">
                 <div>
                     <h2 className="font-bold text-lg flex items-center gap-2">
-                        Room: <span className="font-mono text-blue-400">{id}</span>
-                        <button onClick={handleCopyCode} className="text-zinc-500 hover:text-white transition-colors">
-                            {copySuccess ? <span className="text-green-500 text-xs">Copied!</span> : <Copy className="w-4 h-4" />}
-                        </button>
+                        Game Scorer
                     </h2>
                     <p className="text-xs text-zinc-500">
                         {mode === 'CHAM_DIEM' ? `Race to ${targetScore}` : 'Score Per Round'}
